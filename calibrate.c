@@ -111,6 +111,32 @@ int generateLUT(void)
 	
 }
 
+/**
+ *	Linear Interpolation using sensor lut and return cm from sensor values
+ *
+ *	y = (x-x_0)(y_1-y_0)/(x_1-x_0) + y_0
+ *	y0, 
+ **/
+
+uint8_t getDist(uint16_t sensor_value)
+{	
+	if(sensor_value < sensor_lut[0]) return 0;
+	if(sensor_value > sensor_lut[CALIB_NUM-1]) return 80;
+	
+	uint16_t y0,y1,x0,x1,x;
+	uint8_t i;
+
+	// Find upper index of sensor_value
+	for(i=0;i<CALIB_NUM;i++) if(sensor_value < sensor_lut[i]) break;
+
+	// Values use i+1, therefore upper value as lower value
+	x = sensor_value;
+	y0 = (i)*CALIB_RES; y1 = (i+1)*CALIB_RES;
+	x0 = sensor_lut[i-1]; x1 = sensor_lut[i];
+	
+ 	return ((x-x0)*(y1-y0))/(x1-x0) + y0;
+}
+
 /*---------------- Custom --------------------------------*/
 void custom(void)
 {
@@ -122,7 +148,8 @@ void custom(void)
 	//compass_trx(0x28, wtf);
 
 	
-	//generateLUT();
+	generateLUT();
+	getDist(read_analog(5));
 
 	while(1);
 	
