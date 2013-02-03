@@ -8,14 +8,6 @@
 #include "lpc_types.h"
 
 
-
-struct raw_readings {
-		uint16 **readings;
-		uint8_t i;
-		uint8_t j;
-};
-
-
 /*	Serial.c
  *
  *	Initialises UART3 for MBED to 3pi interface

@@ -14,17 +14,18 @@
 #include "lpc17xx_gpio.h"
 #include "m3pi.h"
 #include "modules.h"
-//#include <stdio.h>
 #include <stdlib.h>
 
+#define CALIB_NUM 8 // Number of calibration points
+#define CALIB_RES 10 // Number of centimeters between calibration points
 
 /*----------------- Global Variables ------------------------------------*/
 
 // create file for outputting adc values
 //FILE * pFile;
 char outputPOS[5];
+uint16_t sensor_lut[CALIB_NUM];
 uint8_t count = 0;
-struct raw_readings raw_values;
 
 
 /*----------------- INTERRUPT SERVICE ROUTINES --------------------------*/
@@ -57,13 +58,14 @@ void TIMER0_IRQHandler(void)
 					_DBD16(pos);
 					_DBG(" ");
 					_DBD16(adcVal);
-					*/_DBG_("");
+					_DBG_("");
 					
 					// Output pos to screen
 					cls();
 					sprintf(outputPOS, "%d", adcVal);
 					print(outputPOS, 5);
 					count = 0;
+					*/
 				}
 				count++;
 				
@@ -95,21 +97,16 @@ Calibrate Angles finds the relative angles of sensors
 2. Read sensor while rotating 
 
 ******************/
-int calibrate(void)
-{
-	raw_values->i = 0; raw_values->j = 0;
-	raw_values->readings = malloc(255*8);	// 8 sets of readings 255 max each
-	
-	// Start taking readings
-	
-	// nextLine()
-	
-	// Stop taking readings 
-	
-	// align()
-	
-	// Do again 8 times
-	
+int generateLUT(void)
+{	
+	uint8_t i;
+	for(i=0;i<CALIB_NUM;i++)
+	{
+		// Go to next line and Align
+		nextLine();
+		// Take readings
+		sensor_lut[i] = read_analog(5);
+	}
 	return 0;
 	
 }
@@ -125,7 +122,7 @@ void custom(void)
 	//compass_trx(0x28, wtf);
 
 	
-	//calibrate();
+	//generateLUT();
 
 	while(1);
 	
@@ -171,7 +168,7 @@ int main(void)
 		led_init(1, (1<<18)|(1<<20)|(1<<21)|(1<<23));
 		
 		// custom movement..
-		custom();AThingy
+		custom();
 
 	   // Enable interrupts globally.
 	   __enable_irq();

@@ -10,9 +10,9 @@
 
 
 struct raw_readings {
+		uint16 **readings;
 		uint8_t i;
 		uint8_t j;
-		uint16 **readings;
 };
 
 
