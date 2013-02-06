@@ -23,11 +23,11 @@ LDSCRIPT = $(CMSIS)/lib/ldscript_rom_gnu.ld
 CFLAGS=-mcpu=cortex-m3  -mthumb  -Wall  -O0  -mapcs-frame  -D__thumb2__=1 \
   -msoft-float  -gdwarf-2  -mno-sched-prolog  -fno-hosted  -mtune=cortex-m3 \
   -march=armv7-m  -mfix-cortex-m3-ldrd   -ffunction-sections  -fdata-sections \
-          -D__RAM_MODE__=0 $(CMSISINCLUDES) -I. 
+          -D__RAM_MODE__=0 $(CMSISINCLUDES) -I.
 
 LDFLAGS=$(CMSISFL) -static -mcpu=cortex-m3 -mthumb -mthumb-interwork \
 	   -Wl,--start-group -L$(THUMB2GNULIB) -L$(THUMB2GNULIB2) \
-           -lc -lg -lstdc++ -lsupc++  -lgcc -lm  -Wl,--end-group \
+           -lc -lg -lstdc++ -lsupc++  -lgcc -lm -Wl,--end-group \
 	   -Xlinker -Map -Xlinker bin/lpc1700.map -Xlinker -T $(LDSCRIPT)
 
 #CFLAGS=-mcpu=cortex-m3  -O0  -mapcs-frame  -D__thumb2__=1 \
@@ -44,7 +44,7 @@ LDFLAGS+=-L$(CMSIS)/lib -lDriversLPC17xxgnu
 
 EXECNAME	= bin/calibrate
 
-OBJ		= calibrate.o modules.o m3pi.o
+OBJ		= calibrate.o m3pi.o compass.o accmag.o gyro.o modules.o
 
 all: 	calibrate
 	@echo "Build finished"

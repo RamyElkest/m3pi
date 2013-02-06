@@ -39,7 +39,7 @@ void adc_init (uint8_t portNum, uint8_t pinNum, uint8_t funcNum, uint8_t channel
  */
 void digital_init (uint8_t port, uint8_t pinNum);
 
-/* Compass Initialisation
+/* i2c compass Initialisation
  *
  *	Initialises a I2C for a compass (accelerometer, gyroscope, magnetometer)
  *
@@ -48,8 +48,9 @@ void digital_init (uint8_t port, uint8_t pinNum);
  *	@param GPIO pin number
  *	@param GPIO pin port
  */
-void compass_init ();
-uint8_t compass_trx(uint8_t send, uint8_t *receive);
+void i2c_init( void );
+uint8_t _i2c_write(uint16_t address, char *send, uint8_t length);
+uint8_t _i2c_read(uint16_t address, char *receive, uint8_t length);
 
 /* Initialise system tick
  *
@@ -57,11 +58,14 @@ uint8_t compass_trx(uint8_t send, uint8_t *receive);
  * @param counter functional state, ENABLE / DISABLE
  * @param interrupt functional state, ENABLE / DISABLE
  */
-void systick_init(uint32_t time, FunctionalState interrupt);
-
+void systick_init( void );
 /* Delay in ms
-*/
-void delay_ms(uint32_t end_time);
+ */
+void delay_ms(uint32_t tick);
+/*
+ * Sleep in seconds
+ */
+void sleep(uint8_t t);
 
 /* LED GPIO
  *

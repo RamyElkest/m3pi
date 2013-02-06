@@ -12,12 +12,18 @@
 #include "lpc17xx_adc.h"
 #include "lpc17xx_timer.h"
 #include "lpc17xx_gpio.h"
+#include "compass.h"
 #include "m3pi.h"
 #include "modules.h"
 #include <stdlib.h>
 
-#define CALIB_NUM 8 // Number of calibration points
+#define CALIB_NUM 4 // Number of calibration points
 #define CALIB_RES 10 // Number of centimeters between calibration points
+#define FRONT_ANALOG 5 // Analog sensor in the front
+#define RIGHT_F_ANALOG 2 // Analog in the front right
+#define RIGHT_B_ANALOG 0 // Analog in the back right
+#define LEFT_F_ANALOG 1 // Analog in the back right
+#define LEFT_B_ANALOG 4 // Analog in the back left
 
 /*----------------- Global Variables ------------------------------------*/
 
@@ -134,7 +140,7 @@ uint8_t getDist(uint16_t sensor_value)
 	y0 = (i)*CALIB_RES; y1 = (i+1)*CALIB_RES;
 	x0 = sensor_lut[i-1]; x1 = sensor_lut[i];
 	
- 	return ((x-x0)*(y1-y0))/(x1-x0) + y0;
+ 	return (80 - ((x-x0)*(y1-y0))/(x1-x0) + y0);
 }
 
 /*---------------- Custom --------------------------------*/
@@ -146,14 +152,37 @@ void custom(void)
 	//wallFollow(0,2);
 	//uint8_t wtf[6];
 	//compass_trx(0x28, wtf);
-
 	
-	generateLUT();
-	getDist(read_analog(5));
+	//generateLUT();
 
-	while(1);
-	
-	_DBG_("Finished..");
+/*
+	uint16_t *readings;
+	uint8_t i, status = compass_getStatus();
+	_DBD(status);
+	readings = compass_read();
+	for(i=0;i<9;i++) {
+		_DBD16(readings[i]);_DBG_("");
+	}
+*/
+
+/*	uint8_t x = 0;
+	while(1) {
+		if (x == 100) {
+			_DBD16(getDist(read_analog(5)));_DBG_("");
+			x=0;
+		}
+		x++;
+	}
+*/
+
+	while(1) {
+		led(1,1<<18,1);
+		delay_ms(1000);
+		led(1,1<<18,0);
+		led(1,1<<20,1);
+		sleep(2);
+		led(1,1<<20,0);
+	}
 }
 
 /*----------------- Main Function --------------------------*/
@@ -186,7 +215,7 @@ int main(void)
 		digital_init(0, 18);	//GPIO 0.18
 		
 		// Initialise system tick (for delays)
-		systick_init(10, DISABLE);
+		systick_init();
 
 		// Initialise Gyroscope
 		compass_init();

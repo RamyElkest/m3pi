@@ -13,6 +13,11 @@
 #include "m3pi.h"
 #include "modules.h"
 
+/*
+ * Private Variables
+ */
+volatile uint32_t SysTickCnt;      /* SysTick Counter */
+
 /*	Serial.c
  *
  *	Initialises UART3 for MBED to 3pi interface
@@ -166,7 +171,7 @@ void digital_init (uint8_t port, uint8_t pinNum)
  *	@param GPIO pin number
  *	@param GPIO pin port
  */
-void compass_init ()
+void i2c_init( void )
 {
 	 /* Configure Pins */
    PINSEL_CFG_Type PinCfg;
@@ -189,22 +194,33 @@ void compass_init ()
    I2C_Cmd(LPC_I2C2, ENABLE);
 }
 
-uint8_t compass_trx(uint8_t send, uint8_t receive[])
+uint8_t _i2c_write(uint16_t address, char *send, uint8_t length)
 {
-   uint8_t data_in = 0x00;
+   I2C_M_SETUP_Type i2c_m_setup;
+	
+   i2c_m_setup.sl_addr7bit = address >> 1;
+   i2c_m_setup.tx_data = send;
+   i2c_m_setup.tx_length = length;
+	i2c_m_setup.rx_data = NULL;
+	i2c_m_setup.rx_length = 0;
+   i2c_m_setup.retransmissions_max = 3;
+	
+	return (uint8_t)!I2C_MasterTransferData(LPC_I2C2, &i2c_m_setup, I2C_TRANSFER_POLLING);
+}
 
+
+uint8_t _i2c_read(uint16_t address, char *receive, uint8_t length)
+{
    I2C_M_SETUP_Type i2c_m_setup;
 
-   i2c_m_setup.sl_addr7bit = 0xD2 >> 1;		// address 105 LSb '1'
-   i2c_m_setup.tx_data = &send;
-   i2c_m_setup.tx_length = sizeof(send);
+   i2c_m_setup.sl_addr7bit = address >> 1;
+	i2c_m_setup.tx_data = NULL ;
+	i2c_m_setup.tx_length = 0;
    i2c_m_setup.rx_data = receive;
-   i2c_m_setup.rx_length = 6;//sizeof(receive);
+   i2c_m_setup.rx_length = length;
    i2c_m_setup.retransmissions_max = 3;
 
-   Status i2c_status = I2C_MasterTransferData(LPC_I2C2, &i2c_m_setup, I2C_TRANSFER_POLLING);
-   
-   return data_in;
+   return (uint8_t)!I2C_MasterTransferData(LPC_I2C2, &i2c_m_setup, I2C_TRANSFER_POLLING);
 }
 
 /* LED GPIO
@@ -275,37 +291,55 @@ void led(uint8_t port, uint32_t pins, uint8_t state)
 	 return 0;
 }
 
-/* Initialise system tick
+/* Initialise system tick interrupt
  *
  * @param time interval in milliseconds
  * @param counter functional state, ENABLE / DISABLE
  * @param interrupt functional state, ENABLE / DISABLE
  */
-void systick_init(uint32_t time, FunctionalState interrupt)
+void systick_init( void )
 {
-	// Initialise systick using internal clock, using time interval in milliseconds
-	SYSTICK_InternalInit(time);
-	//Enable/Disable System Tick interrupt
-	SYSTICK_IntCmd(interrupt);
+        SysTick_Config(SystemCoreClock/1000 - 1);		// Generate interrupt each 1 ms
+	SYSTICK_IntCmd(DISABLE);				//Disable System Tick interrupt
+}
+
+/* SysTick Interrupt Handler (1ms) */
+void SysTick_Handler (void) 
+{           
+        SysTickCnt++;
 }
 
 /* Delay in ms
-*/
-void delay_ms(uint32_t end_time)
+ */
+void delay_ms(uint32_t tick)
 {	
-	//Enable System Tick Counter
-	SYSTICK_Cmd(ENABLE);
-	
-	//while(SYSTICK_GetCurrentValue() > end_time);
-	
+	SYSTICK_IntCmd(ENABLE);					//Enable System Tick Counter
+
+        SysTickCnt = 0;
+        while (SysTickCnt < tick);
+
+	SYSTICK_IntCmd(DISABLE);				//Disable System Tick Counter
 }
+
+/*
+ * Sleep in seconds
+ */
+void sleep(uint8_t t)
+{
+	uint8_t l = t;
+        while(l != 0){
+                delay_ms(1000);    /* Wait 1 sec */
+                l--;
+        }
+}
+
 /* Align robot with horizontal line
  *
  * Called only when one of sensors 0/4 is on a horizontal line
  */
 void align()
 {
-	uint8_t speed = 10,		// Speed to move
+	uint8_t speed = 15,		// Speed to move
 			i;				// loop counter
 	uint16_t sensors[5],	// Array to store sensor values
 			 sensor_max = 2000, // Maximum raw value from a sensor
@@ -456,6 +490,20 @@ void nextLine()
 		
 		if(bypass && (sensors[0] != sensor_max && sensors[4] != sensor_max))
 			bypass = 0;		// Sensor is off the first horizontal line, revoke bypass
+
+		_DBG("Values: ");
+		_DBD16(sensors[0]);
+		_DBG(" ");
+		_DBD16(sensors[1]);
+		_DBG(" ");
+		_DBD16(sensors[2]);
+		_DBG(" ");
+		_DBD16(sensors[3]);
+		_DBG(" ");
+		_DBD16(sensors[4]);
+		_DBG_(" ");
+		_DBD16(bypass);
+		_DBG_(" ");
 	}
 	stop();
 
