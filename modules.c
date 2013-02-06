@@ -334,6 +334,7 @@ void align()
 		stop();
 	}
 	
+	delay_ms(500);	// Delay half a second for any physical activity
 	
 	// Iteratively place each sensor on and off the line, until both align.
 	// Note: an odd number of iterations is prefered.
