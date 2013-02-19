@@ -25,6 +25,9 @@
 #define CALIB_NUM 4 // Number of calibration points
 #define CALIB_RES 10 // Number of centimeters between calibration points
 
+#define k_y 0.5	//  K_y used in wall following to calculate kapa
+#define k_theta 2.0	// K_@ used in wall following to calculate kapa, Has to be 4 * k_y
+
 
 /**
  *	Generates sensors' look up table

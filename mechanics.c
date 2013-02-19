@@ -61,7 +61,7 @@ uint8_t getDist(uint16_t sensor_value)
 /**
  *	Return the angle from teh difference between the sensors
  *	
- *	@param uint8_t indicating desired group of sensors, 0 - Middle sensor, 1 - Right Sensor, 2 - Left Sensor 
+ *	@param uint8_t indicating desired group of sensors, 0 - Middle sensor, 1 - Right Sensors, 2 - Left Sensors
  */
 float getAngleFromSensors(uint8_t whichSensors)
 {
@@ -82,6 +82,111 @@ float getAngleFromSensors(uint8_t whichSensors)
 	return angle;
 }
 
+
+/* Follow Wall PID
+ *
+ *
+ * @param channelA, ADC channel to read first sensor
+ * @param channelB, ADC channel to read second sensor
+ */
+
+void wallFollow(uint8_t whichSensors)
+{
+	int16_t proportional,		// P
+			last_proportional=0,// Previous proporitonal value
+			derivative,			// D
+			power_difference,
+			max = 50,			// Maximum speed
+			last_pd=0;			// Previous power_derivative
+	int32_t integral=0;			// I
+	int64_t temp = 0;			// Temp 64 bit
+	int16_t sensors[2], 		// Array to hold sensor values
+			 i;
+	uint16_t count=0;
+	float y, kapa;
+	const uint8_t y_d = 20;	// 20 cms from the wall
+
+	// Loop until stopped by external interrupt
+	while(1)
+	{		
+		switch(whichSensors) {
+		case RIGHT_SENSORS:
+			sensors[0] = read_analog(RIGHT_F_ANALOG);
+			sensors[1] = read_analog(RIGHT_B_ANALOG);
+			break;
+		case LEFT_SENSORS:
+			sensors[0] = read_analog(LEFT_F_ANALOG);
+			sensors[1] = read_analog(LEFT_B_ANALOG);
+			break;
+		}
+
+		y = (sensors[0] + sensors[1]) / 2;
+		
+		// Calculate Kapa
+		// K = -k_y k_@ (y - y_d) - k_@ @
+		kapa = (y_d - y) * k_y * k_theta;
+		kapa -= k_theta * getAngleFromSensors(whichSensors);
+		
+		proportional = kapa;
+
+		//proportional = (sensors[0] * sensors[1]) - ((int16_t)2000 * sensors[0]) - (sensors[1] - (int16_t)2000);
+
+		// Compute the derivative (change) and integral (sum) of the
+		// position.
+		derivative = proportional - last_proportional;
+		integral += proportional/1000;
+
+		// Remember the last position.
+		last_proportional = proportional;
+
+		// Compute the difference between the two motor power settings,
+		// m1 - m2.  If this is a positive number the robot will turn
+		// to the right.  If it is a negative number, the robot will
+		// turn to the left, and the magnitude of the number determines
+		// the sharpness of the turn.
+		power_difference = proportional/10 /* + integral/1000 + derivative*1/2*/;
+
+
+		if(count == 1000)
+		{
+		_DBG("PID: ");
+		_DBD16(sensors[0]);
+		_DBG(" ");
+		_DBD16(sensors[1]);
+		_DBG(" ");
+		_DBD16(proportional);
+		_DBG(" ");
+		_DBD16(derivative);
+		_DBG(" ");
+		_DBD16(integral);
+		_DBG(" ");
+		_DBD16(power_difference);
+		_DBG_(" ");
+		count=0;
+		}
+
+		// Compute the actual motor settings.  We never set either motor
+
+
+		// to a negative value.
+		if(power_difference > max)
+			power_difference = max;
+		if(power_difference < -max)
+			power_difference = -max;
+
+		if(power_difference < 0) {
+			right_motor(max+power_difference);
+			left_motor(max);
+		} else {
+			right_motor(max);
+			left_motor(max-power_difference);
+		}
+
+		last_pd = power_difference;
+		count++;
+	}
+	stop();
+}
 
 
 /**
