@@ -184,8 +184,10 @@ int generateLUT( void )
  *	y = (x-x_0)(y_1-y_0)/(x_1-x_0) + y_0
  *	y0, 
  **/
-uint8_t getDist(uint16_t sensor_value)
+float getDist(uint16_t sensor_value)
 {	
+	const uint8_t MAX_DIST= CALIB_NUM * CALIB_RES;
+
 	if(sensor_value < sensor_lut[0]) return 80;
 	if(sensor_value > sensor_lut[CALIB_NUM-1]) return 0;
 	
@@ -200,7 +202,7 @@ uint8_t getDist(uint16_t sensor_value)
 	y0 = (i)*CALIB_RES; y1 = (i+1)*CALIB_RES;
 	x0 = sensor_lut[i-1]; x1 = sensor_lut[i];
 	
- 	return (80 - ((x-x0)*(y1-y0))/(x1-x0) + y0);
+ 	return (MAX_DIST - ((x-x0)*(y1-y0))/(x1-x0) + y0);
 }
 
 /*---------------- Custom --------------------------------*/
