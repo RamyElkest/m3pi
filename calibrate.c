@@ -107,7 +107,6 @@ void dump_sensor(uint8_t channel)
 	}	
 }
 
-
 /*---------------- Custom --------------------------------*/
 void custom(void)
 {
