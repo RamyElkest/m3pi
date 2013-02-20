@@ -44,7 +44,7 @@ LDFLAGS+=-L$(CMSIS)/lib -lDriversLPC17xxgnu
 
 EXECNAME	= bin/calibrate
 
-OBJ		= calibrate.o m3pi.o compass.o accmag.o gyro.o modules.o
+OBJ		= calibrate.o m3pi.o compass.o accmag.o gyro.o modules.o mechanics.o
 
 all: 	calibrate
 	@echo "Build finished"

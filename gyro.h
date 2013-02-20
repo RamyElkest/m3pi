@@ -63,7 +63,7 @@
     * @param sda I2C SDA pin
     * @param scl I2C SCL pin
     */
-   void gyro_init( void );
+   void gyr_init( void );
   
    /**
     * Return status code of prevoius function call

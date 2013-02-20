@@ -33,9 +33,8 @@ void compass_init( void ) {
 }
 
 // -------------------------------------------
-short* compass_read( void ) {
-   short data[] = {0,0,0,0,0,0,0,0,0},
-		 acc[] = {0,0,0},
+void compass_read( short *data ) {
+   short acc[] = {0,0,0},
 		 mag[] = {0,0,0},
 		 gyr[] = {0,0,0},
 		 i;
@@ -56,7 +55,6 @@ short* compass_read( void ) {
          }
       }
    } 
-   return( data );
 }
 
 // -------------------------------------------

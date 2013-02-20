@@ -79,7 +79,7 @@
    /**
     * Read all three sensors vectors (accelerometer, magnetometer, gyroscope)
     */
-   short* compass_read( void );
+   void compass_read( short *data );
    
     /**
      * Read accelerometer vector

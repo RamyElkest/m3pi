@@ -41,8 +41,7 @@ uint8_t getDist(uint16_t sensor_value)
 {	
 	uint8_t const MAX_DIST = CALIB_NUM * CALIB_RES; // Capped at 80 since sensor does not go beyond	
 
-	if(sensor_value < sensor_lut[0]) return (MAX_DIST);
-	if(sensor_value > sensor_lut[CALIB_NUM-1]) return 0;
+	if(sensor_value < 200) return 0;	// Minimum threshold
 	
 	uint16_t y0,y1,x0,x1,x;
 	uint8_t i;
