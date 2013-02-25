@@ -89,6 +89,18 @@ void EINT3_IRQHandler(void)
 		stop();
 		while(1);
 	}
+	// Right/Left? Wheel Encoder settings: pin 4, port , rising edge
+	if(GPIO_GetIntStatus(2, 4, 1))
+	{
+		right_wheel_enc.ticks += (right_wheel_enc.direction == 0) ? 1 : -1;	// If direction == 0 (moving forwards) add 1 to ticks, else sub 1
+		GPIO_ClearInt(2,(1<<4));	// Clear the interrupt
+	}
+	// Right/Left? Wheel Encoder settings: pin 4, port , rising edge
+	if(GPIO_GetIntStatus(2, 5, 1))
+	{
+		left_wheel_enc.ticks += (left_wheel_enc.direction == 0) ? 1 : -1;	// If direction == 0 (moving forwards) add 1 to ticks, else sub 1
+		GPIO_ClearInt(2,(1<<5));	// Clear the interrupt
+	}
 }
 /*----------------- Calibates sensor angles ---------------*/
 /******************
@@ -100,11 +112,14 @@ Calibrate Angles finds the relative angles of sensors
 void dump_sensor(uint8_t channel)
 {
 	uint16_t i;
-	for(i=0; i<10000; i++)
+	play_sound(1, "a");
+	_DBG("# Sensor "); _DBD(channel); _DBG_("");
+	for(i=0; i<1000; i++)
 	{
-		_DBD16(read_analog(channel)); _DBG_("");
-		delay_ms(100);
+		_DBD16(read_analog(channel)); _DBG(", ");
+		delay_ms(1);
 	}	
+	play_sound(1, "c");
 }
 
 /*---------------- Custom --------------------------------*/
@@ -118,7 +133,7 @@ void custom(void)
 	//compass_trx(0x28, wtf);
 	
 	//generateLUT();
-
+/*
 	while(1){
 		short readings[9];
 		float test[3];
@@ -130,7 +145,7 @@ void custom(void)
 		}
 		delay_ms(200);
 	}
-
+*/
 /*
 	uint16_t sensors[5];
 	uint32_t ticks = 0;
@@ -172,6 +187,18 @@ void custom(void)
 		led(1,1<<20,0);
 	}
 */
+	//newWallFollow(LEFT_SENSORS);
+	dump_sensor(5); //10
+	sleep(10);
+	dump_sensor(5); //15
+	sleep(10);
+	dump_sensor(5); //20
+	sleep(10);
+	dump_sensor(5); //25
+	sleep(10);
+	dump_sensor(5); //30
+	while(1);
+
 }
 
 /*----------------- Main Function --------------------------*/
@@ -202,6 +229,8 @@ int main(void)
 		
 		// initialise digital sensor
 		digital_init(0, 18);	//GPIO 0.18
+		digital_init(2, 4);		// Wheel encoder (Right/Left?)
+		digital_init(2, 5);		// Wheel encoder (Right/Left?)
 		
 		// Initialise system tick (for delays)
 		systick_init();

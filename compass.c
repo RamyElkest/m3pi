@@ -21,6 +21,7 @@
  */
 
 #include "compass.h"
+#include "imu.h"
 
 int compass_status;   
 
