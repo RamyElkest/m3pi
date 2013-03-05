@@ -366,6 +366,7 @@ void align()
 		
 		speed = -speed;
 		stop();
+		delay_ms(500);
 	}
 	
 	delay_ms(500);	// Delay half a second for any physical activity
@@ -426,6 +427,9 @@ void align()
 	_DBG(" ");
 	_DBD16(sensors[4]);
 	_DBG_("");
+	forward(speed);
+	delay_ms(100);
+	stop();
 }
 
 /* Move to next horizontal line PID
@@ -508,6 +512,7 @@ void nextLine()
 	}
 	stop();
 
+	delay_ms(500);
 	align();
 }
 

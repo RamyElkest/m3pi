@@ -15,22 +15,16 @@
 #include "compass.h"
 #include "m3pi.h"
 #include "modules.h"
+#include "mechanics.h"
 #include <stdlib.h>
 
-#define CALIB_NUM 4 // Number of calibration points
-#define CALIB_RES 10 // Number of centimeters between calibration points
-#define FRONT_ANALOG 5 // Analog sensor in the front
-#define RIGHT_F_ANALOG 2 // Analog in the front right
-#define RIGHT_B_ANALOG 0 // Analog in the back right
-#define LEFT_F_ANALOG 1 // Analog in the back right
-#define LEFT_B_ANALOG 4 // Analog in the back left
+
 
 /*----------------- Global Variables ------------------------------------*/
 
 // create file for outputting adc values
 //FILE * pFile;
 char outputPOS[5];
-uint16_t sensor_lut[CALIB_NUM];
 uint8_t count = 0;
 
 
@@ -95,6 +89,18 @@ void EINT3_IRQHandler(void)
 		stop();
 		while(1);
 	}
+	// Right/Left? Wheel Encoder settings: pin 4, port , rising edge
+	if(GPIO_GetIntStatus(2, 4, 1))
+	{
+		right_wheel_enc.ticks += (right_wheel_enc.direction == 0) ? 1 : -1;	// If direction == 0 (moving forwards) add 1 to ticks, else sub 1
+		GPIO_ClearInt(2,(1<<4));	// Clear the interrupt
+	}
+	// Right/Left? Wheel Encoder settings: pin 4, port , rising edge
+	if(GPIO_GetIntStatus(2, 5, 1))
+	{
+		left_wheel_enc.ticks += (left_wheel_enc.direction == 0) ? 1 : -1;	// If direction == 0 (moving forwards) add 1 to ticks, else sub 1
+		GPIO_ClearInt(2,(1<<5));	// Clear the interrupt
+	}
 }
 /*----------------- Calibates sensor angles ---------------*/
 /******************
@@ -103,112 +109,23 @@ Calibrate Angles finds the relative angles of sensors
 2. Read sensor while rotating 
 
 ******************/
-int generateLUT( void )
-{	
-	uint8_t i;
-	for(i=0;i<CALIB_NUM;i++)
+void dump_sensor(uint8_t channel)
+{
+	uint16_t i;
+	play_sound(1, "a");
+	_DBG("# Sensor "); _DBD(channel); _DBG_("");
+	for(i=0; i<1000; i++)
 	{
-		// Go to next line and Align
-		nextLine();
-		// Sleep for 1 second
-		sleep(1);
-		// Take readings
-		sensor_lut[i] = read_analog(5);
-	}
-	return 0;
-	
-}
-
-/**
- *	Kinemetic equations
- *	We want to yank out .y. (y dot) and .@. (Theta dot)
- *
- * Key equations:
- * .y. = V@
- * .@. = V K_@ K_y (y_d - y) - K_@ V @
- * 
- *
- * Variables:
- * V : Speed
- * @ : Current orientation
- * @_d : Demand orientation
- * y : current offset (from the wall)
- * y_d : Demand offset (from the wall)
- * K_y : constant
- * K_@: constant
- * 
- */
-
-/**
- *	Different Kinemetic equation
- *	
- * Key Equations
- * .x. = R/2 (v_r + v_l) cos@ 
- * .y. = R/2 (v_r + v_l) sin@
- * .@. = R/L (v_r - v_l)
- *
- * v_r = (2v + wL) / 2R
- * v_l = (2v - wL) / 2R
- *
- * .x. = v cos@
- * .y. = v sin@
- * .@. = w
- *
- * Variables
- * R : Wheels radius
- * L : Distance between the wheels
- * v_r : Right wheel velocity
- * v_l : Left wheel velocity
- * w : angular velocity (omega)
- */
- 
- /**
-  * Dynamics: new state from previous state
-  *
-  * key equations:
-  * x' = x + D_c cos@
-  * y' = y + D_c sin@
-  * @' = @ + (D_r - D_l) / L
-  * 
-  * Variables:
-  * D_l : Left wheel ticks
-  * D_r : Right wheel ticks
-  * D_c : centre (D_r + D_l) / 2
-  * D = 2 pi R (delta ticks) / N
-  */
-
-
-/**
- *	Linear Interpolation using sensor lut and return cm from sensor values
- *
- *	y = (x-x_0)(y_1-y_0)/(x_1-x_0) + y_0
- *	y0, 
- **/
-float getDist(uint16_t sensor_value)
-{	
-	const uint8_t MAX_DIST= CALIB_NUM * CALIB_RES;
-
-	if(sensor_value < sensor_lut[0]) return 80;
-	if(sensor_value > sensor_lut[CALIB_NUM-1]) return 0;
-	
-	uint16_t y0,y1,x0,x1,x;
-	uint8_t i;
-
-	// Find upper index of sensor_value
-	for(i=0;i<CALIB_NUM;i++) if(sensor_value < sensor_lut[i]) break;
-
-	// Values use i+1, therefore upper value as lower value
-	x = sensor_value;
-	y0 = (i)*CALIB_RES; y1 = (i+1)*CALIB_RES;
-	x0 = sensor_lut[i-1]; x1 = sensor_lut[i];
-	
- 	return (MAX_DIST - ((x-x0)*(y1-y0))/(x1-x0) + y0);
+		_DBD16(read_analog(channel)); _DBG(", ");
+		delay_ms(1);
+	}	
+	play_sound(1, "c");
 }
 
 /*---------------- Custom --------------------------------*/
 void custom(void)
 {
-	_DBG_("Starting..");
+	//_DBG_("Starting..");
 
 	//led(1,1<<18,1);
 	//wallFollow(0,2);
@@ -216,27 +133,51 @@ void custom(void)
 	//compass_trx(0x28, wtf);
 	
 	//generateLUT();
-
 /*
-	uint16_t *readings;
-	uint8_t i, status = compass_getStatus();
-	_DBD(status);
-	readings = compass_read();
-	for(i=0;i<9;i++) {
-		_DBD16(readings[i]);_DBG_("");
+	while(1){
+		short readings[9];
+		float test[3];
+		uint8_t i, status = _accmagGetStatus();
+		_DBG("Status: ");_DBD(status);_DBG_(" ");
+		compass_read(readings );
+		for(i=0;i<9;i++) {
+			_DBD16(abs(readings[i])); _DBG(" ");
+		}
+		delay_ms(200);
 	}
 */
-
-/*	uint8_t x = 0;
+/*
+	uint16_t sensors[5];
+	uint32_t ticks = 0;
 	while(1) {
-		if (x == 100) {
-			_DBD16(getDist(read_analog(5)));_DBG_("");
+		sensors_line_position(sensors);
+		_DBD16(sensors[2]); _DBG_("");
+		while(sensors[2] > 1900) sensors_line_position(sensors);
+		while(sensors[2] <= 1900) sensors_line_position(sensors);
+		ticks++;
+		_DBD16(ticks);
+	}
+	forward(60);
+	sleep(2);
+	forward(127);
+	sleep(1);
+	forward(10);
+	sleep(2);
+	stop();
+
+	while(1) ;
+
+	uint8_t x = 0;
+	while(1) {
+		if (x == 255) {
+			//_DBD16(getDist(read_analog(5)));_DBG_("");
+			_DBD16(getAngleFromSensors(LEFT_SENSORS));_DBG_("");
 			x=0;
 		}
 		x++;
 	}
 */
-
+/*
 	while(1) {
 		led(1,1<<18,1);
 		delay_ms(1000);
@@ -245,6 +186,19 @@ void custom(void)
 		sleep(2);
 		led(1,1<<20,0);
 	}
+*/
+	//newWallFollow(LEFT_SENSORS);
+	dump_sensor(5); //10
+	sleep(10);
+	dump_sensor(5); //15
+	sleep(10);
+	dump_sensor(5); //20
+	sleep(10);
+	dump_sensor(5); //25
+	sleep(10);
+	dump_sensor(5); //30
+	while(1);
+
 }
 
 /*----------------- Main Function --------------------------*/
@@ -275,6 +229,8 @@ int main(void)
 		
 		// initialise digital sensor
 		digital_init(0, 18);	//GPIO 0.18
+		digital_init(2, 4);		// Wheel encoder (Right/Left?)
+		digital_init(2, 5);		// Wheel encoder (Right/Left?)
 		
 		// Initialise system tick (for delays)
 		systick_init();

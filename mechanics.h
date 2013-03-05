@@ -28,6 +28,13 @@
 #define k_y 0.5	//  K_y used in wall following to calculate kapa
 #define k_theta 2.0	// K_@ used in wall following to calculate kapa, Has to be 4 * k_y
 
+struct wheel_enc {
+	uint8_t direction;	// Direction of the wheel. 0 - Forwards, 1 - backwards
+	int64_t ticks;	// Number of ticks per wheel
+};
+
+struct wheel_enc left_wheel_enc;
+struct wheel_enc right_wheel_enc;
 
 /**
  *	Generates sensors' look up table

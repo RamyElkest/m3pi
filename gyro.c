@@ -38,7 +38,6 @@ void gyr_init( void ) {
    
    // Enable normal mode... 
    _gyrRegisterWrite( GYR_CTRL_REG1, 0x0f );
-
 }
 
 // -----------------------------------------------
