@@ -246,3 +246,36 @@ void wallFollow(uint8_t whichSensors)
   * D_c : centre (D_r + D_l) / 2
   * D = 2 pi R (delta ticks) / N
   */
+ void  cornerise()
+ {
+ 	turn_right(180);
+	while(getDist(read_analog(MIDDLE_SENSOR)) < 10) backward(10);
+	while(getDist(read_analog(MIDDLE_SENSOR)) > 10) forward(10);
+	stop();
+	turn_right(90);
+	while(getDist(read_analog(MIDDLE_SENSOR)) < 10) backward(10);
+	while(getDist(read_analog(MIDDLE_SENSOR)) > 10) forward(10);
+	stop();
+	turn_right(90);
+}
+  
+  // Given a map, inital and goal state, go.
+  // Given a map, traverse the map
+  // Assumes in corner
+void traverseMap (int8_t **map, location* state)
+{
+	// cornerise
+	cornerise();
+	
+	int8_t x = state->x;
+	int8_t y = state->y;
+	
+	wallFollow();
+	
+}
+  
+  
+  
+  
+  
+  
