@@ -30,6 +30,8 @@
 #define TOTAL_TICKS 8	// Number of ticks on the wheel
 #define TICK_TO_CM 1.178097245	// WHEEL_CIRCUM / TOTAL_TICKS
 
+#define DEFAULT_SPEED 20	// Default speed, this should be factored out in later updates
+
 #define k_y 0.5	//  K_y used in wall following to calculate kapa
 #define k_theta 2.0	// K_@ used in wall following to calculate kapa, Has to be 4 * k_y
 

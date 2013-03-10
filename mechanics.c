@@ -94,6 +94,62 @@ float getAngleFromSensors(uint8_t whichSensors)
 	return angle;
 }
 
+/**
+ *	WHEEL ENCODER CONTROLS
+ */
+
+// Turn right wheel a number of ticks
+void tick_right_wheel(uint8_t numberOfTicks)
+{
+	uint64_t currentWheelTicks = right_wheel_enc.ticks;
+	right_motor(DEFAULT_SPEED);
+	while(right_wheel_enc.ticks < currentWheelTicks + numberOfTicks);
+	stop();
+}
+
+// Turn left wheel a number of ticks
+void tick_left_wheel(uint8_t numberOfTicks)
+{
+	uint64_t currentWheelTicks = left_wheel_enc.ticks;
+	left_motor(DEFAULT_SPEED);
+	while(left_wheel_enc.ticks < currentWheelTicks + numberOfTicks);
+	stop();
+}
+
+// Turn left wheel a number of ticks
+void tick_wheels(uint8_t numberOfTicks)
+{
+	uint64_t currentRightWheelTicks = right_wheel_enc.ticks;
+	uint64_t currentLeftWheelTicks = left_wheel_enc.ticks;
+	forward(DEFAULT_SPEED);
+	while((left_wheel_enc.ticks < currentLeftWheelTicks + numberOfTicks) && 
+		  (right_wheel_enc.ticks < currentRightWheelTicks + numberOfTicks));
+	stop();
+}
+
+void turn_right_wheel(uint8_t numberOfTurns)
+{
+	tick_right_wheel(TOTAL_TICKS);
+}
+
+void turn_right_wheel(uint8_t numberOfTurns)
+{
+	tick_left_wheel(TOTAL_TICKS);
+}
+
+/**
+ *	1. Check if total ticks has been covered
+ *	2. Read Analog Sensors
+ *	 i. Check for obstacles (dist < 5cm)
+ *	ii. Check if right/left in range, if in range:
+ *	  a. Get Angle and correct compass angle
+ *	  b. Get Dist and correct state error / map
+ */
+
+void turn_wheels(uint8_t numberOfTurns)
+{
+	tick_wheels(TOTAL_TICKS);
+}
 
 /* Follow Wall PID
  *
