@@ -17,16 +17,20 @@
 #define MBED_LOCALFILESYSTEM_H
 
 //#include "platform.h"
-
-#if DEVICE_LOCALFILESYSTEM
-
+#include "semihost_api.h"
+#include <stdio.h>
+#include <stddef.h>
+#include <stdlib.h>
+#include <fcntl.h>
+//#include <cstring>
 //#include "FileSystemLike.h"
 
 FILEHANDLE _fh;
 int pos;
-typedef long off_t;
 
 FILEHANDLE local_file_open(const char* name, int flags);
+
+FILEHANDLE LocalFileSystem_open(const char* name, int flags);
 
 void LocalFileHandle(FILEHANDLE fh);
 
@@ -43,6 +47,8 @@ off_t LocalFileHandle_lseek(off_t position, int whence);
 int LocalFileHandle_fsync();
 
 off_t LocalFileHandle_flen();
+
+int LocalFileSystem_remove(const char *filename);
 
 
 
@@ -92,7 +98,5 @@ public:
     virtual int remove(const char *filename);
 };
 */
-
-#endif
 
 #endif

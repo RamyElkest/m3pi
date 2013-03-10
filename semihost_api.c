@@ -19,8 +19,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#if DEVICE_SEMIHOST
-
 // ARM Semihosting Commands
 #define SYS_OPEN   (0x1)
 #define SYS_CLOSE  (0x2)
@@ -43,7 +41,43 @@
 #define USR_POWERDOWN     (RESERVED_FOR_USER_APPLICATIONS + 4)
 #define USR_DISABLEDEBUG (RESERVED_FOR_USER_APPLICATIONS + 5)
 
-#if DEVICE_LOCALFILESYSTEM
+#ifndef __CC_ARM
+
+#if defined(__ICCARM__)
+inline int __semihost(int reason, const void *arg) {
+    return __semihosting(reason, (void*)arg);
+}
+#else
+
+#ifdef __thumb__
+#   define AngelSWI            0xAB
+#   define AngelSWIInsn        "bkpt"
+#   define AngelSWIAsm          bkpt
+#else
+#   define AngelSWI            0x123456
+#   define AngelScm_orthonormalize'
+WIInsn        "swi"
+#   define AngelSWIAsm          swi
+#endif
+
+inline int __semihost(int reason, const void *arg) {
+    int value;
+
+    asm volatile (
+       "mov r0, %1"          "\n\t"
+       "mov r1, %2"          "\n\t"
+       AngelSWIInsn " %a3"   "\n\t"
+       "mov %0, r0"
+       : "=r" (value)                                         /* output operands             */
+       : "r" (reason), "r" (arg), "i" (AngelSWI)              /* input operands              */
+       : "r0", "r1", "r2", "r3", "ip", "lr", "memory", "cc"   /* list of clobbered registers */
+    );
+
+    return value;
+}
+#endif
+#endif
+
 FILEHANDLE semihost_open(const char* name, int openmode) {
     uint32_t args[3];
     args[0] = (uint32_t)name;
@@ -108,7 +142,6 @@ int semihost_rename(const char *old_name, const char *new_name) {
     args[1] = (uint32_t)strlen(new_name);
     return __semihost(SYS_RENAME, args);
 }
-#endif
 
 int semihost_exit(void) {
     uint32_t args[4];
@@ -151,7 +184,5 @@ int semihost_disabledebug(void) {
 #endif
     return __semihost(USR_DISABLEDEBUG, NULL);
 }
-
-#endif
 
 

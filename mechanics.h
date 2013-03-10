@@ -25,6 +25,11 @@
 #define CALIB_NUM 4 // Number of calibration points
 #define CALIB_RES 10 // Number of centimeters between calibration points
 
+#define WHEEL_RADIUS 1.5 // wheel radius in cm
+#define WHEEL_CIRCUM 9.424777961 //	wheel circumfrunce in cm 2 pi r
+#define TOTAL_TICKS 8	// Number of ticks on the wheel
+#define TICK_TO_CM 1.178097245	// WHEEL_CIRCUM / TOTAL_TICKS
+
 #define k_y 0.5	//  K_y used in wall following to calculate kapa
 #define k_theta 2.0	// K_@ used in wall following to calculate kapa, Has to be 4 * k_y
 
@@ -47,7 +52,8 @@ int generateLUT( void );
  *	y = (x-x_0)(y_1-y_0)/(x_1-x_0) + y_0
  *	y0, 
  **/
-uint8_t getDist(uint16_t sensor_value);
+uint8_t getDist2(uint16_t sensor_value);
+float getDist(uint16_t sensor_value);
 
 /**
  *	Return the angle from teh difference between the sensors

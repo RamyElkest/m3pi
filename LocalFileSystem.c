@@ -15,13 +15,10 @@
  */
 #include "LocalFileSystem.h"
 
-#if DEVICE_LOCALFILESYSTEM
-
+#include "debug_frmwrk.h"
 #include "semihost_api.h"
 #include <string.h>
 #include <stdio.h>
-
-namespace mbed {
 
 /* Extension to FINFO type defined in RTL.h (in Keil RL) - adds 'create time'. */
 typedef struct {
@@ -99,7 +96,7 @@ FILEHANDLE local_file_open(const char* name, int flags) {
         return (FILEHANDLE)NULL;
     }
 
-    struct FILEHANDLE fh = semihost_open(name, openmode);
+    FILEHANDLE fh = semihost_open(name, openmode);
     if (fh == -1) {
         return (FILEHANDLE)NULL;
     }
@@ -155,24 +152,15 @@ off_t LocalFileHandle_flen() {
     return semihost_flen(_fh);
 }
 
-static struct dirent cur_entry;
-static struct XFINFO info;
+XFINFO info;
 
-LocalDirHandle() {
+void LocalDirHandle() {
 	info.fileID = 0;
 }
 
 int closedir() {
 	info.fileID = 0;
 	return 0;
-}
-
-struct dirent *readdir() {
-	if (xffind("*", &info)!=0) {
-		return NULL;
-	}
-	memcpy(cur_entry.d_name, info.name, sizeof(info.name));
-	return &cur_entry;
 }
 
 void rewinddir() {
@@ -187,22 +175,26 @@ void seekdir(off_t offset) {
 	info.fileID = offset;
 }
 
-FileHandle LocalFileSystem_open(const char* name, int flags) {
+FILEHANDLE LocalFileSystem_open(const char* name, int flags) {
     /* reject filenames with / in them */
-    for (const char *tmp = name; *tmp; tmp++) {
+	const char *tmp = name;
+    for (; *tmp; tmp++) {
         if (*tmp == '/') {
-            return NULL;
+			_DBG_("DISK ERROR: INVALID DIR NAME");
+            return -1;
         }
     }
 
     int openmode = posix_to_semihost_open_flags(flags);
     if (openmode == OPEN_INVALID) {
-        return NULL;
+		_DBG_("DISK ERROR: INVALID OPEN FLAG");
+        return -1;
     }
 
-    struct FILEHANDLE fh = semihost_open(name, openmode);
+    FILEHANDLE fh = semihost_open(name, openmode);
     if (fh == -1) {
-        return NULL;
+		_DBG_("DISK ERROR: SEMIHOST FAILED TO OPEN");
+        return -1;
     }
 	LocalFileHandle(fh);
     return fh;
@@ -211,5 +203,3 @@ FileHandle LocalFileSystem_open(const char* name, int flags) {
 int LocalFileSystem_remove(const char *filename) {
     return semihost_remove(filename);
 }
-
-#endif

@@ -16,6 +16,7 @@
 #ifndef MBED_SEMIHOST_H
 #define MBED_SEMIHOST_H
 
+#include "debug_frmwrk.h"
 //#include "device.h"
 //#include "toolchain.h"
 
@@ -23,45 +24,20 @@
 extern "C" {
 #endif
 
-#if DEVICE_SEMIHOST
+#define DEVICE_ID_LENGTH       32
 
-#ifndef __CC_ARM
-
-#if defined(__ICCARM__)
-inline int __semihost(int reason, const void *arg) {
-    return __semihosting(reason, (void*)arg);
-}
-#else
-
-#ifdef __thumb__
-#   define AngelSWI            0xAB
-#   define AngelSWIInsn        "bkpt"
-#   define AngelSWIAsm          bkpt
-#else
-#   define AngelSWI            0x123456
-#   define AngelSWIInsn        "swi"
-#   define AngelSWIAsm          swi
+#ifndef FILEHANDLE
+typedef int FILEHANDLE;
+#endif
+#ifndef ssize_t
+typedef int ssize_t;
+#endif
+#ifndef off_t
+typedef long off_t;
 #endif
 
-inline int __semihost(int reason, const void *arg) {
-    int value;
+inline int __semihost(int reason, const void *arg);
 
-    asm volatile (
-       "mov r0, %1"          "\n\t"
-       "mov r1, %2"          "\n\t"
-       AngelSWIInsn " %a3"   "\n\t"
-       "mov %0, r0"
-       : "=r" (value)                                         /* output operands             */
-       : "r" (reason), "r" (arg), "i" (AngelSWI)              /* input operands              */
-       : "r0", "r1", "r2", "r3", "ip", "lr", "memory", "cc"   /* list of clobbered registers */
-    );
-
-    return value;
-}
-#endif
-#endif
-
-#if DEVICE_LOCALFILESYSTEM
 FILEHANDLE semihost_open(const char* name, int openmode);
 int semihost_close (FILEHANDLE fh);
 int semihost_read  (FILEHANDLE fh, unsigned char* buffer, unsigned int length, int mode);
@@ -73,7 +49,6 @@ int semihost_istty (FILEHANDLE fh);
 
 int semihost_remove(const char *name);
 int semihost_rename(const char *old_name, const char *new_name);
-#endif
 
 int semihost_uid(char *uid);
 int semihost_reset(void);
@@ -83,8 +58,6 @@ int semihost_exit(void);
 
 int semihost_connected(void);
 int semihost_disabledebug(void);
-
-#endif
 
 #ifdef __cplusplus
 }

@@ -37,7 +37,7 @@ int generateLUT( void )
  *	y = (x-x_0)(y_1-y_0)/(x_1-x_0) + y_0
  *	y0, 
  **/
-uint8_t getDist(uint16_t sensor_value)
+uint8_t getDist2(uint16_t sensor_value)
 {	
 	uint8_t const MAX_DIST = CALIB_NUM * CALIB_RES; // Capped at 80 since sensor does not go beyond	
 
@@ -55,6 +55,19 @@ uint8_t getDist(uint16_t sensor_value)
 	x0 = sensor_lut[i-1]; x1 = sensor_lut[i];
 	
  	return ((x-x0)*(y1-y0))/(x1-x0)+ y0;
+}
+
+float getDist(uint16_t sensor_value)
+{
+	// y = 1.8 * z^4 - 11 * z^3 + 21 * z^2 - 23 * z + 27
+	// z = (x - 1100)/8400
+	static const float a = 1.8;
+	static const uint8_t b = 11, c = 21, d = 23, e = 27;	
+	float z = (sensor_value - 1100.) / 840.;
+	
+	float ans = (a * pow(z,4)) - (b * pow(z,3)) + (c * pow(z,2)) - (d * z) + e;
+
+	return ans;
 }
 
 /**
@@ -106,7 +119,7 @@ void newWallFollow(uint8_t whichSensors)
 	const uint8_t y_d = 20;	// 20 cms from the wall
 
 	// Loop until stopped by external interrupt
-	while(1)
+	while(getDist(read_analog(FRONT_ANALOG)) > WHEEL_CIRCUM)
 	{		
 		switch(whichSensors) {
 		case RIGHT_SENSORS:
@@ -245,3 +258,29 @@ void newWallFollow(uint8_t whichSensors)
   * D_c : centre (D_r + D_l) / 2
   * D = 2 pi R (delta ticks) / N
   */
+
+//cornerise(){};
+/*
+void getMap(uint32_t *raw_map) {
+	// Wall Follow
+	// Update Raw Map
+	// Turn
+
+	
+}
+
+
+
+
+void mapping() {
+	uint32_t raw_map[500], x, y;
+	uint8_t * my_map;
+	char tmp[8];
+	cornerise();
+	getMap(raw_map);
+	initMap(raw_map, my_map, &x, &y);
+	LocalFileSystem_open("myMap.txt", O_WRONLY);
+	sprintf(tmp, "%d %d\r\n", x, y);
+	LocalFileHandle_write(tmp, (int)strlen(tmp));
+	LocalFileHandle_write(my_map, (int)(x * y));
+}*/

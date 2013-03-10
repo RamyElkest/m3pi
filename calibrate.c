@@ -13,17 +13,20 @@
 #include "lpc17xx_timer.h"
 #include "lpc17xx_gpio.h"
 #include "compass.h"
+#include "imu.h"
 #include "m3pi.h"
 #include "modules.h"
 #include "mechanics.h"
+#include "LocalFileSystem.h"
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 
 
 /*----------------- Global Variables ------------------------------------*/
 
 // create file for outputting adc values
-//FILE * pFile;
 char outputPOS[5];
 uint8_t count = 0;
 
@@ -112,81 +115,110 @@ Calibrate Angles finds the relative angles of sensors
 void dump_sensor(uint8_t channel)
 {
 	uint16_t i;
-	play_sound(1, "a");
+	unsigned char send = 'a';
+	play_sound(1, &send);
 	_DBG("# Sensor "); _DBD(channel); _DBG_("");
-	for(i=0; i<1000; i++)
+	for(i=0; i<128; i++)
 	{
 		_DBD16(read_analog(channel)); _DBG(", ");
 		delay_ms(1);
 	}	
-	play_sound(1, "c");
+	play_sound(1, &send);
+}
+void dump_sensor_file(uint8_t channel, uint8_t cm)
+{
+	char str[9];
+	uint16_t i, tmp;
+	play_sound(1, (unsigned char *)"a");
+	for(i=0; i<128; i++)
+	{
+		tmp = read_analog(channel);
+		sprintf(str,"%d %d\r\n", cm, tmp);
+		LocalFileHandle_write(str, (int)strlen(str));
+	}
+	LocalFileHandle_write("\r\n", 2);
+	play_sound(1, (unsigned char *)"d");
+}
+
+void calibrate_analog( void ) {
+	
+	uint8_t i, j;
+	FILEHANDLE myMap;
+
+	for(j=0;j<5;j++) {
+		switch(j){
+			case 0:
+				myMap = LocalFileSystem_open("sensor5.txt", O_WRONLY);
+				break;
+			case 1:
+				myMap = LocalFileSystem_open("sensor0.txt", O_WRONLY);
+				break;
+			case 2:
+				myMap = LocalFileSystem_open("sensor2.txt", O_WRONLY);
+				break;
+			case 3:
+				myMap = LocalFileSystem_open("sensor1.txt", O_WRONLY);
+				break;
+			case 4:
+				myMap = LocalFileSystem_open("sensor4.txt", O_WRONLY);
+				break;
+		}
+		for(i=5; i<=85; i+=5) {
+		switch(j){
+			case 0:
+				dump_sensor_file(5, i);
+				break;
+			case 1:
+				dump_sensor_file(0, i);
+				break;
+			case 2:
+				dump_sensor_file(2, i);
+				break;
+			case 3:
+				dump_sensor_file(1, i);
+				break;
+			case 4:
+				dump_sensor_file(4, i);
+				break;
+		}
+			sleep(3);
+		}
+	LocalFileHandle_close();
+	}
 }
 
 /*---------------- Custom --------------------------------*/
 void custom(void)
 {
-	//_DBG_("Starting..");
+	_DBG_("Starting..");
 
-	//led(1,1<<18,1);
-	//wallFollow(0,2);
-	//uint8_t wtf[6];
-	//compass_trx(0x28, wtf);
+//	calibrate_analog();
+/*
+	play_sound(1, (unsigned char *)"a");
+	myMap = LocalFileSystem_open("my_map.txt", O_WRONLY);
+	_DBG_("Opened..");
+	LocalFileHandle_write("hey my name is Jennifer", 23);
+	_DBG_("Wrote..");
+	LocalFileHandle_close();
+	_DBG_("Closed..");
+	play_sound(1, (unsigned char *)"d");
+	myMap = LocalFileSystem_open("my_map.txt", O_RDONLY);
+	_DBG_("Opened again..");
+	LocalFileHandle_read(read, 10);
+	_DBG_("Read..");
+	LocalFileHandle_close();
+	_DBG_("Closed again..");
+
 	
-	//generateLUT();
-/*
-	while(1){
-		short readings[9];
-		float test[3];
-		uint8_t i, status = _accmagGetStatus();
-		_DBG("Status: ");_DBD(status);_DBG_(" ");
-		compass_read(readings );
-		for(i=0;i<9;i++) {
-			_DBD16(abs(readings[i])); _DBG(" ");
-		}
-		delay_ms(200);
-	}
-*/
-/*
-	uint16_t sensors[5];
-	uint32_t ticks = 0;
+	
 	while(1) {
-		sensors_line_position(sensors);
-		_DBD16(sensors[2]); _DBG_("");
-		while(sensors[2] > 1900) sensors_line_position(sensors);
-		while(sensors[2] <= 1900) sensors_line_position(sensors);
-		ticks++;
-		_DBD16(ticks);
+	imu_update();
+	_DBD16(adcAvg[0]); _DBG(", ");
+	_DBD16(adcAvg[1]); _DBG(", ");
+	_DBD16(adcAvg[2]); _DBG_(" ");
 	}
-	forward(60);
-	sleep(2);
-	forward(127);
-	sleep(1);
-	forward(10);
-	sleep(2);
-	stop();
 
-	while(1) ;
-
-	uint8_t x = 0;
-	while(1) {
-		if (x == 255) {
-			//_DBD16(getDist(read_analog(5)));_DBG_("");
-			_DBD16(getAngleFromSensors(LEFT_SENSORS));_DBG_("");
-			x=0;
-		}
-		x++;
-	}
-*/
 /*
-	while(1) {
-		led(1,1<<18,1);
-		delay_ms(1000);
-		led(1,1<<18,0);
-		led(1,1<<20,1);
-		sleep(2);
-		led(1,1<<20,0);
-	}
-*/
 	//newWallFollow(LEFT_SENSORS);
 	dump_sensor(5); //10
 	sleep(10);
@@ -197,6 +229,24 @@ void custom(void)
 	dump_sensor(5); //25
 	sleep(10);
 	dump_sensor(5); //30
+*/
+	while(1) {
+		_DBD16(read_analog(0)); _DBG(" . ");
+		_DBD16(read_analog(1)); _DBG(" . ");
+		_DBD16(read_analog(2)); _DBG(" . ");
+		_DBD16(read_analog(4)); _DBG(" . ");
+		_DBD16(read_analog(5)); _DBG_("");
+		delay_ms(500);
+	}
+
+char str[50];
+	while(1) {
+		sprintf(str, "%d %f\0", read_analog(5), getDist(read_analog(5)));
+		_DBG(str); _DBG_(" .");
+		sleep(1);
+	}
+
+
 	while(1);
 
 }
@@ -236,7 +286,8 @@ int main(void)
 		systick_init();
 
 		// Initialise Gyroscope
-		compass_init();
+		//compass_init();
+		//imu_init();
 		
 		//Initialise MBED LED1 (1.18)
 		led_init(1, (1<<18)|(1<<20)|(1<<21)|(1<<23));
