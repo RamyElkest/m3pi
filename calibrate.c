@@ -18,6 +18,7 @@
 #include "modules.h"
 #include "mechanics.h"
 #include "LocalFileSystem.h"
+#include "wheel_enc_pid.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -192,25 +193,27 @@ void custom(void)
 {
 	_DBG_("Starting..");
 
+	// initialize the variables we're linked to
+	// turn the PID on
+	Initialize();
+	SetMode(AUTOMATIC);
+	SetSampleTime(100); //0.1 seconds
+	SetOutputLimits(30);	// Max speed
+	SetTunings(1, 0.001, 0.25);
+	
+	
+	while(1) {
+		//Decides whether to launch PID algorithm
+		Compute();		
+	}
+	
+	//newWallFollow(LEFT_SENSORS, 20);
+	newWallFollow(LEFT_SENSORS);
+
 //	calibrate_analog();
-/*
-	play_sound(1, (unsigned char *)"a");
-	myMap = LocalFileSystem_open("my_map.txt", O_WRONLY);
-	_DBG_("Opened..");
-	LocalFileHandle_write("hey my name is Jennifer", 23);
-	_DBG_("Wrote..");
-	LocalFileHandle_close();
-	_DBG_("Closed..");
-	play_sound(1, (unsigned char *)"d");
-	myMap = LocalFileSystem_open("my_map.txt", O_RDONLY);
-	_DBG_("Opened again..");
-	LocalFileHandle_read(read, 10);
-	_DBG_("Read..");
-	LocalFileHandle_close();
-	_DBG_("Closed again..");
 
 	
-	
+/*
 	while(1) {
 	imu_update();
 	_DBD16(adcAvg[0]); _DBG(", ");
@@ -218,30 +221,18 @@ void custom(void)
 	_DBD16(adcAvg[2]); _DBG_(" ");
 	}
 
-/*
-	//newWallFollow(LEFT_SENSORS);
-	dump_sensor(5); //10
-	sleep(10);
-	dump_sensor(5); //15
-	sleep(10);
-	dump_sensor(5); //20
-	sleep(10);
-	dump_sensor(5); //25
-	sleep(10);
-	dump_sensor(5); //30
-*/
 	while(1) {
 		_DBD16(read_analog(0)); _DBG(" . ");
 		_DBD16(read_analog(1)); _DBG(" . ");
 		_DBD16(read_analog(2)); _DBG(" . ");
 		_DBD16(read_analog(4)); _DBG(" . ");
-		_DBD16(read_analog(5)); _DBG_("");
+		_DBD16(read_analog(3)); _DBG_("");
 		delay_ms(500);
 	}
-
+*/
 char str[50];
 	while(1) {
-		sprintf(str, "%d %f\0", read_analog(5), getDist(read_analog(5)));
+		sprintf(str, "%d %f\0", read_analog(3), getAngleFromSensors(LEFT_SENSORS));
 		_DBG(str); _DBG_(" .");
 		sleep(1);
 	}
@@ -274,8 +265,8 @@ int main(void)
 		adc_init(0, 23, 1, 0);	//ADC 0.0
 		adc_init(0, 24, 1, 1);	//ADC 0.1
 		adc_init(0, 25, 1, 2);	//ADC 0.2
+		adc_init(0, 26, 1, 3);	//ADC 0.3
 		adc_init(1, 30, 3, 4);	//ADC 0.4
-		adc_init(1, 31, 3, 5);	//ADC 0.5
 		
 		// initialise digital sensor
 		digital_init(0, 18);	//GPIO 0.18
@@ -286,8 +277,8 @@ int main(void)
 		systick_init();
 
 		// Initialise Gyroscope
-		//compass_init();
-		//imu_init();
+		compass_init();
+		imu_init();
 		
 		//Initialise MBED LED1 (1.18)
 		led_init(1, (1<<18)|(1<<20)|(1<<21)|(1<<23));

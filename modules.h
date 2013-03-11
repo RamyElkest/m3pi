@@ -66,6 +66,9 @@ void delay_ms(uint32_t tick);
  * Sleep in seconds
  */
 void sleep(uint8_t t);
+/* Return milliseconds
+ */
+uint64_t millis(void);
 
 /* LED GPIO
  *

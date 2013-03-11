@@ -13,7 +13,7 @@
 #define MIDDLE_SENSOR 0 // Middle sensor
 #define RIGHT_SENSORS 1 // Right sensors
 #define LEFT_SENSORS 2 // Left Sensors
-#define FRONT_ANALOG 5 // Analog sensor in the front
+#define FRONT_ANALOG 3 // Analog sensor in the front
 #define LEFT_F_ANALOG 2 // Analog in the front right
 #define LEFT_B_ANALOG 0 // Analog in the back right
 #define RIGHT_F_ANALOG 1 // Analog in the back right
@@ -56,6 +56,16 @@ int generateLUT( void );
  **/
 uint8_t getDist2(uint16_t sensor_value);
 float getDist(uint16_t sensor_value);
+
+/**
+ *	WHEEL ENCODER CONTROLS
+ */
+void tick_right_wheel(uint8_t numberOfTicks);
+void tick_left_wheel(uint8_t numberOfTicks);
+void tick_wheels(uint8_t numberOfTicks);
+void turn_right_wheel(uint8_t numberOfTurns);
+void turn_left_wheel(uint8_t numberOfTurns);
+void turn_wheels(uint8_t numberOfTurns);
 
 /**
  *	Return the angle from teh difference between the sensors

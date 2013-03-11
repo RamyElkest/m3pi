@@ -67,7 +67,7 @@ float getDist(uint16_t sensor_value)
 	
 	float ans = (a * pow(z,4)) - (b * pow(z,3)) + (c * pow(z,2)) - (d * z) + e;
 
-	return ans;
+	return (ans < 0) ? 0 : ans;
 }
 
 /**
@@ -132,7 +132,7 @@ void turn_right_wheel(uint8_t numberOfTurns)
 	tick_right_wheel(TOTAL_TICKS);
 }
 
-void turn_right_wheel(uint8_t numberOfTurns)
+void turn_left_wheel(uint8_t numberOfTurns)
 {
 	tick_left_wheel(TOTAL_TICKS);
 }
@@ -164,27 +164,27 @@ void newWallFollow(uint8_t whichSensors)
 			last_proportional=0,// Previous proporitonal value
 			derivative,			// D
 			power_difference,
-			max = 20,			// Maximum speed
+			max = 30,			// Maximum speed
 			last_pd=0;			// Previous power_derivative
 	int32_t integral=0;			// I
 	int64_t temp = 0;			// Temp 64 bit
-	int16_t sensors[2], 		// Array to hold sensor values
+	uint16_t count=0,
 			 i;
-	uint16_t count=0;
-	float y, kapa;
+	float y, kapa,
+		  sensors[2]; 		// Array to hold sensor values
 	const uint8_t y_d = 20;	// 20 cms from the wall
 
 	// Loop until stopped by external interrupt
 	while(getDist(read_analog(FRONT_ANALOG)) > WHEEL_CIRCUM)
-	{		
+	{
 		switch(whichSensors) {
 		case RIGHT_SENSORS:
-			sensors[0] = read_analog(RIGHT_F_ANALOG);
-			sensors[1] = read_analog(RIGHT_B_ANALOG);
+			sensors[0] = getDist(read_analog(RIGHT_F_ANALOG));
+			sensors[1] = getDist(read_analog(RIGHT_B_ANALOG));
 			break;
 		case LEFT_SENSORS:
-			sensors[0] = read_analog(LEFT_F_ANALOG);
-			sensors[1] = read_analog(LEFT_B_ANALOG);
+			sensors[0] = getDist(read_analog(LEFT_F_ANALOG));
+			sensors[1] = getDist(read_analog(LEFT_B_ANALOG));
 			break;
 		}
 
@@ -192,8 +192,8 @@ void newWallFollow(uint8_t whichSensors)
 		
 		// Calculate Kapa
 		// K = -k_y k_@ (y - y_d) - k_@ @
-		kapa = (y_d - y) * k_y * k_theta;
-		kapa -= k_theta * getAngleFromSensors(whichSensors);
+		kapa = (y_d - y) * -k_y * k_theta;
+		kapa += k_theta * getAngleFromSensors(whichSensors);
 		
 		proportional = kapa;
 
@@ -212,7 +212,105 @@ void newWallFollow(uint8_t whichSensors)
 		// to the right.  If it is a negative number, the robot will
 		// turn to the left, and the magnitude of the number determines
 		// the sharpness of the turn.
-		power_difference = proportional/10 /* + integral/1000 + derivative*1/2*/;
+		power_difference = proportional/4 /* + integral/1000 + derivative*1/2*/;
+
+
+		if(count == 10)
+		{
+		_DBG("PID: ");
+		_DBD16(sensors[0]);
+		_DBG(" ");
+		_DBD16(sensors[1]);
+		_DBG(" ");
+		_DBD16(proportional);
+		_DBG(" ");
+		_DBD16(derivative);
+		_DBG(" ");
+		_DBD16(integral);
+		_DBG(" ");
+		_DBD16(power_difference);
+		_DBG_(" ");
+		count=0;
+		}
+
+		// Compute the actual motor settings.  We never set either motor
+
+
+		// to a negative value.
+		if(power_difference > max)
+			power_difference = max;
+		if(power_difference < -max)
+			power_difference = -max;
+
+		if(power_difference < 0) {
+			left_motor(max+power_difference);
+			right_motor(max);
+		} else {
+			left_motor(max);
+			right_motor(max-power_difference);
+		}
+
+		last_pd = power_difference;
+		count++;
+	}
+	stop();
+}
+
+/* Follow Wall PID
+ *
+ *
+ * @param channelA, ADC channel to read first sensor
+ * @param channelB, ADC channel to read second sensor
+ */
+
+void mehWallFollow(uint8_t whichSensors, uint8_t distance)
+{
+	int16_t proportional,		// P
+			last_proportional=0,// Previous proporitonal value
+			derivative,			// D
+			power_difference,
+			max = 50,			// Maximum speed
+			last_pd=0;			// Previous power_derivative
+	int32_t integral=0;			// I
+	int64_t temp = 0,			// Temp 64 bit
+			dist = pow(distance,2);
+	float sensors[2]; 		// Array to hold sensor values
+	uint16_t count=0,
+			 i;
+
+	// Loop until stopped by external interrupt
+	while(getDist(read_analog(FRONT_ANALOG)) > WHEEL_CIRCUM)
+	{
+		switch(whichSensors) {
+		case RIGHT_SENSORS:
+			sensors[0] = getDist(read_analog(RIGHT_F_ANALOG));
+			sensors[1] = getDist(read_analog(RIGHT_B_ANALOG));
+			break;
+		case LEFT_SENSORS:
+			sensors[0] = getDist(read_analog(LEFT_F_ANALOG));
+			sensors[1] = getDist(read_analog(LEFT_B_ANALOG));
+			break;
+		}
+
+		temp = (sensors[0] * sensors[1]) - (int64_t)dist;
+		proportional = temp;
+
+		//proportional = (sensors[0] * sensors[1]) - ((int16_t)2000 * sensors[0]) - (sensors[1] - (int16_t)2000);
+
+		// Compute the derivative (change) and integral (sum) of the
+		// position.
+		derivative = proportional - last_proportional;
+		integral += proportional/1000;
+
+		// Remember the last position.
+		last_proportional = proportional;
+
+		// Compute the difference between the two motor power settings,
+		// m1 - m2.  If this is a positive number the robot will turn
+		// to the right.  If it is a negative number, the robot will
+		// turn to the left, and the magnitude of the number determines
+		// the sharpness of the turn.
+		power_difference = proportional/1000 + integral/1000 + derivative*1/2;
 
 
 		if(count == 1000)
@@ -339,7 +437,7 @@ void mapping() {
 	sprintf(tmp, "%d %d\r\n", x, y);
 	LocalFileHandle_write(tmp, (int)strlen(tmp));
 	LocalFileHandle_write(my_map, (int)(x * y));
-}*/
+}
 
  void  cornerise()
  {
@@ -368,7 +466,7 @@ void traverseMap (int8_t **map, location* state)
 	wallFollow();
 	
 }
-  
+  */
   
   
   

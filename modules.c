@@ -16,7 +16,7 @@
 /*
  * Private Variables
  */
-volatile uint32_t SysTickCnt;      /* SysTick Counter */
+volatile uint64_t SysTickCnt;      /* SysTick Counter */
 
 /*	Serial.c
  *
@@ -299,13 +299,18 @@ void led(uint8_t port, uint32_t pins, uint8_t state)
  */
 void systick_init( void )
 {
-        SysTick_Config(SystemCoreClock/1000 - 1);		// Generate interrupt each 1 ms
-	SYSTICK_IntCmd(DISABLE);				//Disable System Tick interrupt
+    SysTick_Config(SystemCoreClock/1000 - 1);		// Generate interrupt each 1 ms
+	//SYSTICK_IntCmd(DISABLE);				//Disable System Tick interrupt
+	SYSTICK_IntCmd(ENABLE);					//Enable System Tick Counter
 }
 
 /* SysTick Interrupt Handler (1ms) */
 void SysTick_Handler (void) 
-{           
+{
+		if (SysTickCnt == (uint64_t) 0xFFFFFFFF) {
+			SysTickCnt = 0;
+			return;		
+		}
         SysTickCnt++;
 }
 
@@ -313,12 +318,19 @@ void SysTick_Handler (void)
  */
 void delay_ms(uint32_t tick)
 {	
-	SYSTICK_IntCmd(ENABLE);					//Enable System Tick Counter
+	//SYSTICK_IntCmd(ENABLE);					//Enable System Tick Counter
 
-        SysTickCnt = 0;
-        while (SysTickCnt < tick);
+    uint64_t lastSysTickCnt = SysTickCnt;
+    while (SysTickCnt < lastSysTickCnt + tick);
 
-	SYSTICK_IntCmd(DISABLE);				//Disable System Tick Counter
+	//SYSTICK_IntCmd(DISABLE);				//Disable System Tick Counter
+}
+
+/* Return milliseconds
+ */
+uint64_t millis(void)
+{	
+	return SysTickCnt;
 }
 
 /*
